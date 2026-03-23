@@ -1,0 +1,37 @@
+.wp-feed-display__header {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin-bottom: 1rem;
+}
+
+.wp-feed-display__header h3 {
+	margin: 0;
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.wp-feed-display__badge {
+	display: inline-block;
+	padding: 0.15rem 0.6rem;
+	font-size: 0.7rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	background: #e0e0e0;
+	border-radius: 4px;
+	color: #555;
+}
+
+.wp-feed-display__loading {
+	grid-column: 1 / -1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 2rem;
+	gap: 0.75rem;
+}
+
+.wp-feed-display .components-placeholder {
+	grid-column: 1 / -1;
+}

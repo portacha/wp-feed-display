@@ -1,0 +1,41 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "wp-feed-display/feed",
+	"version": "1.0.0",
+	"title": "Post Feed",
+	"category": "widgets",
+	"icon": "feed",
+	"description": "Muestra los posts del sitio en un feed con carga lazy, imagen destacada, extracto y tags.",
+	"textdomain": "wp-feed-display",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:render.php",
+	"attributes": {
+		"backgroundColor": {
+			"type": "string",
+			"default": "#ffffff"
+		},
+		"textColor": {
+			"type": "string",
+			"default": "#333333"
+		},
+		"accentColor": {
+			"type": "string",
+			"default": "#0073aa"
+		},
+		"categories": {
+			"type": "string",
+			"default": ""
+		},
+		"tags": {
+			"type": "string",
+			"default": ""
+		},
+		"postsPerPage": {
+			"type": "number",
+			"default": 6
+		}
+	}
+}
