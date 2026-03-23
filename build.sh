@@ -18,6 +18,7 @@ rm -f "$ZIP_FILE"
 cd "$DIST_DIR"
 zip -r "$ZIP_FILE" \
   "$PLUGIN_NAME/wp-feed-display.php" \
+  "$PLUGIN_NAME/README.md" \
   "$PLUGIN_NAME/includes/" \
   "$PLUGIN_NAME/assets/" \
   "$PLUGIN_NAME/build/" \
