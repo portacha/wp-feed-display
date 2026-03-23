@@ -1,13 +1,15 @@
 ( function () {
 	'use strict';
 
-	const API_BASE =
-		( typeof wpFeedDisplay !== 'undefined' && wpFeedDisplay.apiBase ) ||
-		( typeof wpApiSettings !== 'undefined' && wpApiSettings.root + 'wp-feed-display/v1/posts' ) ||
-		'/wp-json/wp-feed-display/v1/posts';
+	var AJAX_URL = ( typeof wpFeedDisplay !== 'undefined' && wpFeedDisplay.ajaxUrl ) || '';
+	var REST_URL = ( typeof wpFeedDisplay !== 'undefined' && wpFeedDisplay.restUrl ) || '';
+
+	var API_BASE = AJAX_URL
+		? AJAX_URL + '?action=wpfd_get_posts'
+		: REST_URL || '/wp-json/wp-feed-display/v1/posts';
 
 	function createCardHTML( post ) {
-		const tagsHTML =
+		var tagsHTML =
 			post.tags && post.tags.length
 				? '<div class="wp-feed-display__card-tags">' +
 				  post.tags
@@ -23,7 +25,7 @@
 				  '</div>'
 				: '';
 
-		const imageHTML = post.thumbnail
+		var imageHTML = post.thumbnail
 			? '<div class="wp-feed-display__card-image"><img src="' +
 			  escapeHTML( post.thumbnail ) +
 			  '" alt="' +
@@ -56,6 +58,16 @@
 		return div.innerHTML;
 	}
 
+	function parsePosts( data, useAjax ) {
+		if ( useAjax && data && data.success && Array.isArray( data.data ) ) {
+			return data.data;
+		}
+		if ( Array.isArray( data ) ) {
+			return data;
+		}
+		return [];
+	}
+
 	function initFeed( container ) {
 		var grid = container.querySelector( '.wp-feed-display__grid' );
 		var sentinel = container.querySelector( '.wp-feed-display__sentinel' );
@@ -69,6 +81,7 @@
 		var page = 1;
 		var loading = false;
 		var exhausted = false;
+		var useAjax = !! AJAX_URL;
 
 		function fetchPosts() {
 			if ( loading || exhausted ) return;
@@ -84,18 +97,18 @@
 			if ( categories ) params.set( 'categories', categories );
 			if ( tags ) params.set( 'tags', tags );
 
-			var url = API_BASE + ( API_BASE.indexOf( '?' ) > -1 ? '&' : '?' ) + params.toString();
+			var url = API_BASE + '&' + params.toString();
 
-			fetch( url, {
-				headers: { 'X-WP-Nonce': ( typeof wpFeedDisplay !== 'undefined' && wpFeedDisplay.nonce ) || '' },
-			} )
+			fetch( url )
 				.then( function ( response ) {
 					if ( ! response.ok ) {
 						throw new Error( 'HTTP ' + response.status + ': ' + response.statusText );
 					}
 					return response.json();
 				} )
-				.then( function ( posts ) {
+				.then( function ( data ) {
+					var posts = parsePosts( data, useAjax );
+
 					if ( ! posts || posts.length === 0 ) {
 						exhausted = true;
 						sentinel.classList.add( 'is-hidden' );
@@ -161,8 +174,7 @@
 	}
 
 	function init() {
-		var containers = document.querySelectorAll( '.wp-feed-display' );
-		containers.forEach( initFeed );
+		document.querySelectorAll( '.wp-feed-display' ).forEach( initFeed );
 	}
 
 	if ( document.readyState === 'loading' ) {

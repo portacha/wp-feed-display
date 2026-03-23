@@ -1,6 +1,6 @@
 <?php
 /**
- * REST API endpoint for lazy-loading feed posts.
+ * Feed data handler — REST API + admin-ajax fallback.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,6 +13,8 @@ class WP_Feed_Display_REST_API {
 
     public function __construct() {
         add_action( 'rest_api_init', [ $this, 'register_routes' ] );
+        add_action( 'wp_ajax_wpfd_get_posts', [ $this, 'ajax_get_posts' ] );
+        add_action( 'wp_ajax_nopriv_wpfd_get_posts', [ $this, 'ajax_get_posts' ] );
     }
 
     public function register_routes() {
@@ -20,32 +22,59 @@ class WP_Feed_Display_REST_API {
             'methods'             => 'GET',
             'callback'            => [ $this, 'get_posts' ],
             'permission_callback' => '__return_true',
-            'args'                => [
-                'page'       => [
-                    'default'           => 1,
-                    'sanitize_callback' => 'absint',
-                ],
-                'per_page'   => [
-                    'default'           => 6,
-                    'sanitize_callback' => 'absint',
-                ],
-                'categories' => [
-                    'default'           => '',
-                    'sanitize_callback' => 'sanitize_text_field',
-                ],
-                'tags'       => [
-                    'default'           => '',
-                    'sanitize_callback' => 'sanitize_text_field',
-                ],
-            ],
+            'args'                => $this->get_query_args(),
         ] );
     }
 
+    private function get_query_args() {
+        return [
+            'page'       => [
+                'default'           => 1,
+                'sanitize_callback' => 'absint',
+            ],
+            'per_page'   => [
+                'default'           => 6,
+                'sanitize_callback' => 'absint',
+            ],
+            'categories' => [
+                'default'           => '',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'tags'       => [
+                'default'           => '',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+        ];
+    }
+
+    public function ajax_get_posts() {
+        $params = [
+            'page'       => isset( $_GET['page'] ) ? absint( $_GET['page'] ) : 1,
+            'per_page'   => isset( $_GET['per_page'] ) ? absint( $_GET['per_page'] ) : 6,
+            'categories' => isset( $_GET['categories'] ) ? sanitize_text_field( $_GET['categories'] ) : '',
+            'tags'       => isset( $_GET['tags'] ) ? sanitize_text_field( $_GET['tags'] ) : '',
+        ];
+
+        $posts = $this->query_posts( $params );
+        wp_send_json_success( $posts );
+    }
+
     public function get_posts( $request ) {
-        $page       = $request->get_param( 'page' );
-        $per_page   = $request->get_param( 'per_page' );
-        $categories = $request->get_param( 'categories' );
-        $tags       = $request->get_param( 'tags' );
+        $params = [
+            'page'       => $request->get_param( 'page' ),
+            'per_page'   => $request->get_param( 'per_page' ),
+            'categories' => $request->get_param( 'categories' ),
+            'tags'       => $request->get_param( 'tags' ),
+        ];
+
+        return rest_ensure_response( $this->query_posts( $params ) );
+    }
+
+    private function query_posts( $params ) {
+        $page       = absint( $params['page'] ) ?: 1;
+        $per_page   = absint( $params['per_page'] ) ?: 6;
+        $categories = $params['categories'] ?? '';
+        $tags       = $params['tags'] ?? '';
 
         $args = [
             'post_type'      => 'post',
@@ -68,9 +97,7 @@ class WP_Feed_Display_REST_API {
         $posts = [];
 
         foreach ( $query->posts as $post ) {
-            $thumbnail = get_the_post_thumbnail_url( $post->ID, 'medium_large' )
-                ? get_the_post_thumbnail_url( $post->ID, 'medium_large' )
-                : '';
+            $thumbnail = get_the_post_thumbnail_url( $post->ID, 'medium_large' ) ?: '';
 
             $post_tags = get_the_terms( $post->ID, 'post_tag' );
             $tag_list  = [];
@@ -95,7 +122,7 @@ class WP_Feed_Display_REST_API {
 
         wp_reset_postdata();
 
-        return rest_ensure_response( $posts );
+        return $posts;
     }
 }
 

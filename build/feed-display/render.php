@@ -35,5 +35,6 @@ $wrapper_attrs = get_block_wrapper_attributes( [
 <?php
 wp_enqueue_script( 'wp-feed-display-lazy' );
 wp_localize_script( 'wp-feed-display-lazy', 'wpFeedDisplay', [
-    'apiBase' => esc_url_raw( rest_url( 'wp-feed-display/v1/posts' ) ),
+    'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+    'restUrl' => esc_url_raw( rest_url( 'wp-feed-display/v1/posts' ) ),
 ] );
