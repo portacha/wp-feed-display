@@ -60,7 +60,12 @@ if ( $is_masonry ) {
         esc_attr( $attributes['masonryButtonBg'] ?? '#ffffff' ),
         esc_attr( $attributes['masonryButtonText'] ?? '#000000' )
     );
-} elseif ( ! $is_split ) {
+} elseif ( $is_split ) {
+    $style_vars .= sprintf(
+        '--split-cols:%d;',
+        esc_attr( $attributes['splitColumns'] ?? 2 )
+    );
+} else {
     $style_vars .= sprintf(
         'background-color:%s;color:%s;',
         esc_attr( $attributes['backgroundColor'] ?? '#ffffff' ),

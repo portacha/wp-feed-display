@@ -23,8 +23,10 @@ const DEFAULT_ATTRS = {
 	tags: '',
 	postsPerPage: 6,
 	excerptLength: 150,
+	gridColumns: 3,
 	gridButtonBg: '#0073aa',
 	gridButtonText: '#ffffff',
+	splitColumns: 2,
 	masonryColumns: 4,
 	masonryGap: 8,
 	masonryPadding: 0,
@@ -46,8 +48,10 @@ export default function Edit( { attributes, setAttributes } ) {
 		tags = DEFAULT_ATTRS.tags,
 		postsPerPage = DEFAULT_ATTRS.postsPerPage,
 		excerptLength = DEFAULT_ATTRS.excerptLength,
+		gridColumns = DEFAULT_ATTRS.gridColumns,
 		gridButtonBg = DEFAULT_ATTRS.gridButtonBg,
 		gridButtonText = DEFAULT_ATTRS.gridButtonText,
+		splitColumns = DEFAULT_ATTRS.splitColumns,
 		masonryColumns = DEFAULT_ATTRS.masonryColumns,
 		masonryGap = DEFAULT_ATTRS.masonryGap,
 		masonryPadding = DEFAULT_ATTRS.masonryPadding,
@@ -69,8 +73,10 @@ export default function Edit( { attributes, setAttributes } ) {
 			'--feed-bg': backgroundColor,
 			'--feed-text': textColor,
 			'--feed-accent': accentColor,
+			'--grid-cols': gridColumns,
 			'--grid-button-bg': gridButtonBg,
 			'--grid-button-text': gridButtonText,
+			'--split-cols': splitColumns,
 			'--masonry-cols': masonryColumns,
 			'--masonry-gap': masonryGap + 'px',
 			'--masonry-padding': masonryPadding + 'px',
@@ -308,9 +314,27 @@ export default function Edit( { attributes, setAttributes } ) {
 
 				{ ( isGrid || isSplit ) && (
 					<PanelBody
-						title={ __( 'Configuración de contenido', 'wp-feed-display' ) }
+						title={ __( 'Configuración de diseño', 'wp-feed-display' ) }
 						initialOpen={ false }
 					>
+						{ isGrid && (
+							<RangeControl
+								label={ __( 'Columnas', 'wp-feed-display' ) }
+								value={ gridColumns }
+								onChange={ ( val ) => setAttributes( { gridColumns: val } ) }
+								min={ 1 }
+								max={ 4 }
+							/>
+						) }
+						{ isSplit && (
+							<RangeControl
+								label={ __( 'Filas por lote', 'wp-feed-display' ) }
+								value={ splitColumns }
+								onChange={ ( val ) => setAttributes( { splitColumns: val } ) }
+								min={ 1 }
+								max={ 4 }
+							/>
+						) }
 						<RangeControl
 							label={ __( 'Longitud del extracto', 'wp-feed-display' ) }
 							value={ excerptLength }

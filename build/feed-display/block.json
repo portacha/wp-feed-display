@@ -45,6 +45,10 @@
       "type": "number",
       "default": 150
     },
+    "gridColumns": {
+      "type": "number",
+      "default": 3
+    },
     "gridButtonBg": {
       "type": "string",
       "default": "#0073aa"
@@ -52,6 +56,10 @@
     "gridButtonText": {
       "type": "string",
       "default": "#ffffff"
+    },
+    "splitColumns": {
+      "type": "number",
+      "default": 2
     },
     "masonryColumns": {
       "type": "number",

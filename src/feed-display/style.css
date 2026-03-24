@@ -5,7 +5,7 @@
 
 .wp-feed-display__grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	grid-template-columns: repeat(var(--grid-cols, 3), 1fr);
 	gap: 1.5rem;
 	max-width: 1200px;
 	margin: 0 auto;
@@ -341,10 +341,10 @@ a.wp-feed-display__masonry-overlay:hover {
 }
 
 .wp-feed-display__split {
-	display: flex;
-	flex-direction: column;
+	display: grid;
+	grid-template-columns: repeat(var(--split-cols, 2), 1fr);
 	gap: 1.5rem;
-	max-width: 900px;
+	/* max-width: 1200px; */
 	margin: 0 auto;
 }
 
@@ -450,6 +450,11 @@ a.wp-feed-display__masonry-overlay:hover {
 }
 
 @media (max-width: 768px) {
+	.wp-feed-display__split {
+		grid-template-columns: 1fr;
+		gap: 1rem;
+	}
+
 	.wp-feed-display__split-card {
 		grid-template-columns: 1fr;
 		gap: 0;
