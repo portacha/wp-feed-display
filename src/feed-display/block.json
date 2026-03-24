@@ -96,6 +96,38 @@
 		"masonryButtonText": {
 			"type": "string",
 			"default": "#000000"
+		},
+		"slidePosts": {
+			"type": "number",
+			"default": 1
+		},
+		"slideInterval": {
+			"type": "number",
+			"default": 5000
+		},
+		"slideTextPosition": {
+			"type": "string",
+			"default": "bottom"
+		},
+		"slideBg": {
+			"type": "string",
+			"default": "#000000"
+		},
+		"slideTextColor": {
+			"type": "string",
+			"default": "#ffffff"
+		},
+		"slideAccentColor": {
+			"type": "string",
+			"default": "#0073aa"
+		},
+		"slideButtonBg": {
+			"type": "string",
+			"default": "#ffffff"
+		},
+		"slideButtonText": {
+			"type": "string",
+			"default": "#000000"
 		}
 	}
 }

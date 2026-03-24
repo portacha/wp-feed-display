@@ -27,12 +27,15 @@ if ( ! function_exists( 'wpfd_hex_to_rgb' ) ) {
 $view_mode = $attributes['viewMode'] ?? 'grid';
 $is_masonry = $view_mode === 'masonry';
 $is_split = $view_mode === 'split';
+$is_slide = $view_mode === 'slide';
 
 $wrapper_classes = [ 'wp-feed-display' ];
 if ( $is_masonry ) {
     $wrapper_classes[] = 'wp-feed-display--masonry';
 } elseif ( $is_split ) {
     $wrapper_classes[] = 'wp-feed-display--split';
+} elseif ( $is_slide ) {
+    $wrapper_classes[] = 'wp-feed-display--slide';
 }
 
 $style_vars = sprintf(
@@ -65,6 +68,18 @@ if ( $is_masonry ) {
         '--split-cols:%d;',
         esc_attr( $attributes['splitColumns'] ?? 2 )
     );
+} elseif ( $is_slide ) {
+    $style_vars .= sprintf(
+        '--slide-posts:%d;--slide-interval:%dms;--slide-text-pos:%s;--slide-bg:%s;--slide-text:%s;--slide-accent:%s;--slide-btn-bg:%s;--slide-btn-text:%s;',
+        esc_attr( $attributes['slidePosts'] ?? 1 ),
+        esc_attr( $attributes['slideInterval'] ?? 5000 ),
+        esc_attr( $attributes['slideTextPosition'] ?? 'bottom' ),
+        esc_attr( $attributes['slideBg'] ?? '#000000' ),
+        esc_attr( $attributes['slideTextColor'] ?? '#ffffff' ),
+        esc_attr( $attributes['slideAccentColor'] ?? '#0073aa' ),
+        esc_attr( $attributes['slideButtonBg'] ?? '#ffffff' ),
+        esc_attr( $attributes['slideButtonText'] ?? '#000000' )
+    );
 } else {
     $style_vars .= sprintf(
         'background-color:%s;color:%s;',
@@ -81,11 +96,23 @@ $wrapper_attrs = get_block_wrapper_attributes( [
     'data-tags'       => esc_attr( $attributes['tags'] ?? '' ),
     'data-per-page'   => esc_attr( $attributes['postsPerPage'] ?? 6 ),
     'data-excerpt-length' => esc_attr( $attributes['excerptLength'] ?? 150 ),
+    'data-slide-posts' => $is_slide ? esc_attr( $attributes['slidePosts'] ?? 1 ) : '',
+    'data-slide-interval' => $is_slide ? esc_attr( $attributes['slideInterval'] ?? 5000 ) : '',
 ] );
 ?>
 <div <?php echo $wrapper_attrs; // phpcs:ignore ?>>
-    <div class="<?php echo $is_masonry ? 'wp-feed-display__masonry' : ( $is_split ? 'wp-feed-display__split' : 'wp-feed-display__grid' ); ?>">
+    <div class="<?php echo $is_masonry ? 'wp-feed-display__masonry' : ( $is_split ? 'wp-feed-display__split' : ( $is_slide ? 'wp-feed-display__slider' : 'wp-feed-display__grid' ) ); ?>">
     </div>
+    <?php if ( $is_slide ) : ?>
+    <div class="wp-feed-display__slider-nav">
+        <button class="wp-feed-display__slider-prev" aria-label="<?php esc_attr_e( 'Anterior', 'wp-feed-display' ); ?>">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <button class="wp-feed-display__slider-next" aria-label="<?php esc_attr_e( 'Siguiente', 'wp-feed-display' ); ?>">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        </button>
+    </div>
+    <?php endif; ?>
     <div class="wp-feed-display__sentinel" aria-hidden="true">
         <span class="wp-feed-display__spinner"></span>
     </div>

@@ -36,6 +36,14 @@ const DEFAULT_ATTRS = {
 	masonryTextSize: 100,
 	masonryButtonBg: '#ffffff',
 	masonryButtonText: '#000000',
+	slidePosts: 1,
+	slideInterval: 5000,
+	slideTextPosition: 'bottom',
+	slideBg: '#000000',
+	slideTextColor: '#ffffff',
+	slideAccentColor: '#0073aa',
+	slideButtonBg: '#ffffff',
+	slideButtonText: '#000000',
 };
 
 export default function Edit( { attributes, setAttributes } ) {
@@ -61,14 +69,23 @@ export default function Edit( { attributes, setAttributes } ) {
 		masonryTextSize = DEFAULT_ATTRS.masonryTextSize,
 		masonryButtonBg = DEFAULT_ATTRS.masonryButtonBg,
 		masonryButtonText = DEFAULT_ATTRS.masonryButtonText,
+		slidePosts = DEFAULT_ATTRS.slidePosts,
+		slideInterval = DEFAULT_ATTRS.slideInterval,
+		slideTextPosition = DEFAULT_ATTRS.slideTextPosition,
+		slideBg = DEFAULT_ATTRS.slideBg,
+		slideTextColor = DEFAULT_ATTRS.slideTextColor,
+		slideAccentColor = DEFAULT_ATTRS.slideAccentColor,
+		slideButtonBg = DEFAULT_ATTRS.slideButtonBg,
+		slideButtonText = DEFAULT_ATTRS.slideButtonText,
 	} = attributes;
 
 	const isMasonry = viewMode === 'masonry';
 	const isSplit = viewMode === 'split';
 	const isGrid = viewMode === 'grid';
+	const isSlide = viewMode === 'slide';
 
 	const blockProps = useBlockProps( {
-		className: isMasonry ? 'wp-feed-display wp-feed-display--masonry' : isSplit ? 'wp-feed-display wp-feed-display--split' : 'wp-feed-display',
+		className: isMasonry ? 'wp-feed-display wp-feed-display--masonry' : isSplit ? 'wp-feed-display wp-feed-display--split' : isSlide ? 'wp-feed-display wp-feed-display--slide' : 'wp-feed-display',
 		style: {
 			'--feed-bg': backgroundColor,
 			'--feed-text': textColor,
@@ -86,8 +103,16 @@ export default function Edit( { attributes, setAttributes } ) {
 			'--masonry-text-size': masonryTextSize + '%',
 			'--masonry-button-bg': masonryButtonBg,
 			'--masonry-button-text': masonryButtonText,
-			backgroundColor: isMasonry ? 'transparent' : backgroundColor,
-			color: textColor,
+			'--slide-posts': slidePosts,
+			'--slide-interval': slideInterval + 'ms',
+			'--slide-text-pos': slideTextPosition,
+			'--slide-bg': slideBg,
+			'--slide-text': slideTextColor,
+			'--slide-accent': slideAccentColor,
+			'--slide-btn-bg': slideButtonBg,
+			'--slide-btn-text': slideButtonText,
+			backgroundColor: isMasonry ? 'transparent' : ( isSlide ? slideBg : backgroundColor ),
+			color: isSlide ? slideTextColor : textColor,
 		},
 	} );
 
@@ -106,7 +131,7 @@ export default function Edit( { attributes, setAttributes } ) {
 	const previewPosts = useSelect(
 		( select ) => {
 			const query = {
-				per_page: Math.min( postsPerPage, isMasonry ? 8 : 3 ),
+				per_page: Math.min( postsPerPage, isMasonry ? 8 : ( isSlide ? 4 : 3 ) ),
 				_embed: true,
 				status: 'publish',
 			};
@@ -118,7 +143,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			}
 			return select( coreStore ).getEntityRecords( 'postType', 'post', query );
 		},
-		[ categories, tags, postsPerPage, isMasonry ]
+		[ categories, tags, postsPerPage, isMasonry, isSlide ]
 	);
 
 	const categoryOptions = [
@@ -203,6 +228,29 @@ export default function Edit( { attributes, setAttributes } ) {
 			);
 		}
 
+		if ( isSlide ) {
+			const postTags = post._embedded?.[ 'wp:term' ]?.[ 1 ]?.slice( 0, 3 ) || [];
+			return (
+				<article key={ post.id } className="wp-feed-display__slide-card">
+					<div className={ `wp-feed-display__slide-text wp-feed-display__slide-text--${ slideTextPosition }` }>
+						<h4 className="wp-feed-display__slide-title">{ post.title?.rendered || '' }</h4>
+						{ postTags.length > 0 && (
+							<div className="wp-feed-display__slide-tags">
+								{ postTags.map( ( tag ) => (
+									<span key={ tag.id } className="wp-feed-display__tag">
+										{ tag.name }
+									</span>
+								) ) }
+							</div>
+						) }
+						<a href={ post.link || '#' } className="wp-feed-display__slide-btn">
+							{ __( 'más', 'wp-feed-display' ) }
+						</a>
+					</div>
+				</article>
+			);
+		}
+
 		return (
 			<article key={ post.id } className="wp-feed-display__card">
 				{ featuredImage && (
@@ -240,6 +288,7 @@ export default function Edit( { attributes, setAttributes } ) {
 							{ label: __( 'Grid con tarjetas', 'wp-feed-display' ), value: 'grid' },
 							{ label: __( 'Split (dos columnas)', 'wp-feed-display' ), value: 'split' },
 							{ label: __( 'Masonry (solo imágenes)', 'wp-feed-display' ), value: 'masonry' },
+							{ label: __( 'Slide animado', 'wp-feed-display' ), value: 'slide' },
 						] }
 						onChange={ ( val ) => setAttributes( { viewMode: val } ) }
 					/>
@@ -388,6 +437,79 @@ export default function Edit( { attributes, setAttributes } ) {
 					</PanelBody>
 				) }
 
+				{ isSlide && (
+					<PanelBody
+						title={ __( 'Configuración del slide', 'wp-feed-display' ) }
+						initialOpen={ false }
+					>
+						<RangeControl
+							label={ __( 'Posts por slide', 'wp-feed-display' ) }
+							value={ slidePosts }
+							onChange={ ( val ) => setAttributes( { slidePosts: val } ) }
+							min={ 1 }
+							max={ 2 }
+						/>
+						<RangeControl
+							label={ __( 'Intervalo (segundos)', 'wp-feed-display' ) }
+							value={ slideInterval / 1000 }
+							onChange={ ( val ) => setAttributes( { slideInterval: val * 1000 } ) }
+							min={ 1 }
+							max={ 10 }
+						/>
+						<SelectControl
+							label={ __( 'Posición del texto', 'wp-feed-display' ) }
+							value={ slideTextPosition }
+							options={ [
+								{ label: __( 'Abajo', 'wp-feed-display' ), value: 'bottom' },
+								{ label: __( 'Arriba', 'wp-feed-display' ), value: 'top' },
+								{ label: __( 'Centro', 'wp-feed-display' ), value: 'center' },
+							] }
+							onChange={ ( val ) => setAttributes( { slideTextPosition: val } ) }
+						/>
+					</PanelBody>
+				) }
+
+				{ isSlide && (
+					<PanelColorSettings
+						title={ __( 'Colores del slide', 'wp-feed-display' ) }
+						colorSettings={ [
+							{
+								value: slideBg,
+								onChange: ( color ) => setAttributes( { slideBg: color } ),
+								label: __( 'Color de fondo', 'wp-feed-display' ),
+							},
+							{
+								value: slideTextColor,
+								onChange: ( color ) => setAttributes( { slideTextColor: color } ),
+								label: __( 'Color de texto', 'wp-feed-display' ),
+							},
+							{
+								value: slideAccentColor,
+								onChange: ( color ) => setAttributes( { slideAccentColor: color } ),
+								label: __( 'Color de acento', 'wp-feed-display' ),
+							},
+						] }
+					/>
+				) }
+
+				{ isSlide && (
+					<PanelColorSettings
+						title={ __( 'Colores del botón', 'wp-feed-display' ) }
+						colorSettings={ [
+							{
+								value: slideButtonBg,
+								onChange: ( color ) => setAttributes( { slideButtonBg: color } ),
+								label: __( 'Color de fondo botón', 'wp-feed-display' ),
+							},
+							{
+								value: slideButtonText,
+								onChange: ( color ) => setAttributes( { slideButtonText: color } ),
+								label: __( 'Color de texto botón', 'wp-feed-display' ),
+							},
+						] }
+					/>
+				) }
+
 				<PanelBody
 					title={ __( 'Filtros de posts', 'wp-feed-display' ) }
 					initialOpen={ false }
@@ -424,11 +546,11 @@ export default function Edit( { attributes, setAttributes } ) {
 				<div className="wp-feed-display__header">
 					<h3>{ __( 'Post Feed', 'wp-feed-display' ) }</h3>
 					<span className="wp-feed-display__badge">
-						{ isMasonry ? __( 'Masonry', 'wp-feed-display' ) : isSplit ? __( 'Split', 'wp-feed-display' ) : __( 'Grid', 'wp-feed-display' ) }
+						{ isMasonry ? __( 'Masonry', 'wp-feed-display' ) : isSplit ? __( 'Split', 'wp-feed-display' ) : isSlide ? __( 'Slide', 'wp-feed-display' ) : __( 'Grid', 'wp-feed-display' ) }
 					</span>
 				</div>
 
-				<div className={ isMasonry ? 'wp-feed-display__masonry' : isSplit ? 'wp-feed-display__split' : 'wp-feed-display__grid' }>
+				<div className={ isMasonry ? 'wp-feed-display__masonry' : isSplit ? 'wp-feed-display__split' : isSlide ? 'wp-feed-display__slider' : 'wp-feed-display__grid' }>
 					{ ! previewPosts && (
 						<div className="wp-feed-display__loading">
 							<Spinner />

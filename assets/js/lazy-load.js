@@ -117,6 +117,33 @@
 		);
 	}
 
+	function createSlideCardHTML( post, textPosition ) {
+		var tagsHTML =
+			post.tags && post.tags.length
+				? '<div class="wp-feed-display__slide-tags">' +
+				  post.tags
+						.slice( 0, 3 )
+						.map(
+							( tag ) =>
+								'<span class="wp-feed-display__tag">' +
+								escapeHTML( tag.name ) +
+								'</span>'
+						)
+						.join( '' ) +
+				  '</div>'
+				: '';
+
+		return (
+			'<article class="wp-feed-display__slide-card">' +
+			'<div class="wp-feed-display__slide-text wp-feed-display__slide-text--' + textPosition + '">' +
+			'<h4 class="wp-feed-display__slide-title">' + escapeHTML( post.title ) + '</h4>' +
+			tagsHTML +
+			'<a href="' + escapeHTML( post.permalink ) + '" class="wp-feed-display__slide-btn">más</a>' +
+			'</div>' +
+			'</article>'
+		);
+	}
+
 	function parsePosts( data, useAjax ) {
 		if ( useAjax && data && data.success && Array.isArray( data.data ) ) {
 			return data.data;
@@ -131,11 +158,12 @@
 		var viewMode = container.dataset.viewMode || 'grid';
 		var isMasonry = viewMode === 'masonry';
 		var isSplit = viewMode === 'split';
+		var isSlide = viewMode === 'slide';
 
-		var grid = container.querySelector( isMasonry ? '.wp-feed-display__masonry' : isSplit ? '.wp-feed-display__split' : '.wp-feed-display__grid' );
+		var grid = container.querySelector( isMasonry ? '.wp-feed-display__masonry' : isSplit ? '.wp-feed-display__split' : isSlide ? '.wp-feed-display__slider' : '.wp-feed-display__grid' );
 		var sentinel = container.querySelector( '.wp-feed-display__sentinel' );
 
-		if ( ! grid || ! sentinel ) return;
+		if ( ! grid ) return;
 
 		var categories = container.dataset.categories || '';
 		var tags = container.dataset.tags || '';
@@ -147,6 +175,12 @@
 		var exhausted = false;
 		var useAjax = !! AJAX_URL;
 
+		var slidePosts = parseInt( container.dataset.slidePosts, 10 ) || 1;
+		var slideInterval = parseInt( container.dataset.slideInterval, 10 ) || 5000;
+		var currentSlide = 0;
+		var autoSlideTimer = null;
+		var allPosts = [];
+
 		function createCardHTML( post ) {
 			if ( isMasonry ) {
 				return createMasonryCardHTML( post );
@@ -154,19 +188,118 @@
 			if ( isSplit ) {
 				return createSplitCardHTML( post );
 			}
+			if ( isSlide ) {
+				return createSlideCardHTML( post, container.style.getPropertyValue( '--slide-text-pos' ) || 'bottom' );
+			}
 			return createGridCardHTML( post );
+		}
+
+		function initSlider() {
+			if ( ! isSlide || allPosts.length === 0 ) return;
+
+			var sliderInner = document.createElement( 'div' );
+			sliderInner.className = 'wp-feed-display__slider-inner';
+
+			var temp = document.createElement( 'div' );
+			allPosts.forEach( function ( post ) {
+				temp.innerHTML = createCardHTML( post );
+				if ( temp.firstChild ) {
+					sliderInner.appendChild( temp.firstChild );
+				}
+			} );
+
+			grid.appendChild( sliderInner );
+
+			var totalSlides = Math.ceil( allPosts.length / slidePosts );
+
+			var dotsContainer = document.createElement( 'div' );
+			dotsContainer.className = 'wp-feed-display__slider-dots';
+			for ( var i = 0; i < totalSlides; i++ ) {
+				var dot = document.createElement( 'button' );
+				dot.className = 'wp-feed-display__slider-dot' + ( i === 0 ? ' active' : '' );
+				dot.addEventListener( 'click', function () {
+					goToSlide( i );
+				} );
+				dotsContainer.appendChild( dot );
+			}
+			container.appendChild( dotsContainer );
+
+			var prevBtn = container.querySelector( '.wp-feed-display__slider-prev' );
+			var nextBtn = container.querySelector( '.wp-feed-display__slider-next' );
+
+			if ( prevBtn ) {
+				prevBtn.addEventListener( 'click', function () {
+					prevSlide();
+				} );
+			}
+			if ( nextBtn ) {
+				nextBtn.addEventListener( 'click', function () {
+					nextSlide();
+				} );
+			}
+
+			function goToSlide( index ) {
+				currentSlide = index;
+				var offset = -currentSlide * 100;
+				sliderInner.style.transform = 'translateX(' + offset + '%)';
+
+				var dots = dotsContainer.querySelectorAll( '.wp-feed-display__slider-dot' );
+				dots.forEach( function ( dot, i ) {
+					dot.classList.toggle( 'active', i === currentSlide );
+				} );
+
+				resetAutoSlide();
+			}
+
+			function nextSlide() {
+				var totalSlides = Math.ceil( allPosts.length / slidePosts );
+				currentSlide = ( currentSlide + 1 ) % totalSlides;
+				goToSlide( currentSlide );
+			}
+
+			function prevSlide() {
+				var totalSlides = Math.ceil( allPosts.length / slidePosts );
+				currentSlide = ( currentSlide - 1 + totalSlides ) % totalSlides;
+				goToSlide( currentSlide );
+			}
+
+			function resetAutoSlide() {
+				if ( autoSlideTimer ) {
+					clearInterval( autoSlideTimer );
+				}
+				if ( slideInterval > 0 ) {
+					autoSlideTimer = setInterval( nextSlide, slideInterval );
+				}
+			}
+
+			resetAutoSlide();
+
+			container.addEventListener( 'mouseenter', function () {
+				if ( autoSlideTimer ) {
+					clearInterval( autoSlideTimer );
+					autoSlideTimer = null;
+				}
+			} );
+
+			container.addEventListener( 'mouseleave', function () {
+				resetAutoSlide();
+			} );
+
+			if ( sentinel ) {
+				sentinel.classList.add( 'is-hidden' );
+			}
 		}
 
 		function fetchPosts() {
 			if ( loading || exhausted ) return;
 			loading = true;
 
-			var spinner = sentinel.querySelector( '.wp-feed-display__spinner' );
+			var spinner = sentinel && sentinel.querySelector( '.wp-feed-display__spinner' );
 			if ( spinner ) spinner.classList.remove( 'is-hidden' );
 
 			var params = new URLSearchParams( {
 				page: String( page ),
-				per_page: String( perPage ),
+				per_page: String( isSlide ? 12 : perPage ),
 				excerpt_length: String( excerptLength ),
 			} );
 			if ( categories ) params.set( 'categories', categories );
@@ -186,13 +319,27 @@
 
 					if ( ! posts || posts.length === 0 ) {
 						exhausted = true;
-						sentinel.classList.add( 'is-hidden' );
+						if ( sentinel ) sentinel.classList.add( 'is-hidden' );
 
-						if ( grid.children.length === 0 ) {
+						if ( ! isSlide && grid.children.length === 0 ) {
 							var emptyMsg = document.createElement( 'div' );
 							emptyMsg.className = 'wp-feed-display__loading-end';
 							emptyMsg.textContent = 'No se encontraron posts.';
 							container.appendChild( emptyMsg );
+						}
+						return;
+					}
+
+					if ( isSlide ) {
+						allPosts = allPosts.concat( posts );
+						page++;
+						loading = false;
+
+						if ( posts.length < 12 ) {
+							exhausted = true;
+							initSlider();
+						} else {
+							fetchPosts();
 						}
 						return;
 					}
@@ -218,7 +365,7 @@
 				} )
 				.catch( function ( error ) {
 					console.error( 'WP Feed Display: Error fetching posts', error );
-					sentinel.classList.add( 'is-hidden' );
+					if ( sentinel ) sentinel.classList.add( 'is-hidden' );
 
 					var errorMsg = document.createElement( 'div' );
 					errorMsg.className = 'wp-feed-display__loading-end';
@@ -230,7 +377,9 @@
 				} );
 		}
 
-		if ( typeof IntersectionObserver !== 'undefined' ) {
+		if ( isSlide ) {
+			fetchPosts();
+		} else if ( typeof IntersectionObserver !== 'undefined' && sentinel ) {
 			var observer = new IntersectionObserver(
 				function ( entries ) {
 					entries.forEach( function ( entry ) {
@@ -243,10 +392,8 @@
 			);
 
 			observer.observe( sentinel );
+			fetchPosts();
 		}
-
-		fetchPosts();
-	}
 
 	function init() {
 		document.querySelectorAll( '.wp-feed-display' ).forEach( initFeed );
