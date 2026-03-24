@@ -13,6 +13,10 @@
 	"style": "file:./style-index.css",
 	"render": "file:render.php",
 	"attributes": {
+		"viewMode": {
+			"type": "string",
+			"default": "grid"
+		},
 		"backgroundColor": {
 			"type": "string",
 			"default": "#ffffff"
@@ -36,6 +40,58 @@
 		"postsPerPage": {
 			"type": "number",
 			"default": 6
+		},
+		"excerptLength": {
+			"type": "number",
+			"default": 150
+		},
+		"gridColumns": {
+			"type": "number",
+			"default": 3
+		},
+		"gridButtonBg": {
+			"type": "string",
+			"default": "#0073aa"
+		},
+		"gridButtonText": {
+			"type": "string",
+			"default": "#ffffff"
+		},
+		"masonryColumns": {
+			"type": "number",
+			"default": 4
+		},
+		"masonryGap": {
+			"type": "number",
+			"default": 8
+		},
+		"masonryPadding": {
+			"type": "number",
+			"default": 0
+		},
+		"masonryOverlayBg": {
+			"type": "string",
+			"default": "#000000"
+		},
+		"masonryOverlayOpacity": {
+			"type": "number",
+			"default": 50
+		},
+		"masonryTextColor": {
+			"type": "string",
+			"default": "#ffffff"
+		},
+		"masonryTextSize": {
+			"type": "number",
+			"default": 100
+		},
+		"masonryButtonBg": {
+			"type": "string",
+			"default": "#ffffff"
+		},
+		"masonryButtonText": {
+			"type": "string",
+			"default": "#000000"
 		}
 	}
 }

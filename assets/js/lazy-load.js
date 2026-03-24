@@ -8,7 +8,14 @@
 		? AJAX_URL + '?action=wpfd_get_posts'
 		: REST_URL || '/wp-json/wp-feed-display/v1/posts';
 
-	function createCardHTML( post ) {
+	function escapeHTML( str ) {
+		if ( ! str ) return '';
+		var div = document.createElement( 'div' );
+		div.appendChild( document.createTextNode( str ) );
+		return div.innerHTML;
+	}
+
+	function createGridCardHTML( post ) {
 		var tagsHTML =
 			post.tags && post.tags.length
 				? '<div class="wp-feed-display__card-tags">' +
@@ -37,25 +44,77 @@
 			'<article class="wp-feed-display__card">' +
 			imageHTML +
 			'<div class="wp-feed-display__card-content">' +
-			'<h4 class="wp-feed-display__card-title"><a href="' +
-			escapeHTML( post.permalink ) +
-			'">' +
-			escapeHTML( post.title ) +
-			'</a></h4>' +
-			'<div class="wp-feed-display__card-excerpt"><p>' +
-			escapeHTML( post.excerpt ) +
-			'</p></div>' +
+			'<h4 class="wp-feed-display__card-title">' + escapeHTML( post.title ) + '</h4>' +
+			'<div class="wp-feed-display__card-excerpt"><p>' + escapeHTML( post.excerpt ) + '</p></div>' +
 			tagsHTML +
+			'<a href="' + escapeHTML( post.permalink ) + '" class="wp-feed-display__card-btn">más</a>' +
 			'</div>' +
 			'</article>'
 		);
 	}
 
-	function escapeHTML( str ) {
-		if ( ! str ) return '';
-		var div = document.createElement( 'div' );
-		div.appendChild( document.createTextNode( str ) );
-		return div.innerHTML;
+	function createSplitCardHTML( post ) {
+		var categoryHTML = post.category
+			? '<span class="wp-feed-display__split-category">' +
+			  '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">' +
+			  '<path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>' +
+			  '</svg>' +
+			  escapeHTML( post.category ) +
+			  '</span>'
+			: '';
+
+		var imageHTML = post.thumbnail
+			? '<div class="wp-feed-display__split-image"><img src="' +
+			  escapeHTML( post.thumbnail ) +
+			  '" alt="' +
+			  escapeHTML( post.title ) +
+			  '" loading="lazy" /></div>'
+			: '';
+
+		return (
+			'<article class="wp-feed-display__split-card">' +
+			imageHTML +
+			'<div class="wp-feed-display__split-content">' +
+			categoryHTML +
+			'<h4 class="wp-feed-display__split-title">' + escapeHTML( post.title ) + '</h4>' +
+			'<div class="wp-feed-display__split-excerpt"><p>' + escapeHTML( post.excerpt ) + '</p></div>' +
+			'<a href="' + escapeHTML( post.permalink ) + '" class="wp-feed-display__split-btn">más</a>' +
+			'</div>' +
+			'</article>'
+		);
+	}
+
+	function createMasonryCardHTML( post ) {
+		var categoryHTML = post.category
+			? '<span class="wp-feed-display__masonry-category">' +
+			  '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">' +
+			  '<path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>' +
+			  '</svg>' +
+			  escapeHTML( post.category ) +
+			  '</span>'
+			: '';
+
+		var imageHTML = post.thumbnail
+			? '<div class="wp-feed-display__masonry-image"><img src="' +
+			  escapeHTML( post.thumbnail ) +
+			  '" alt="' +
+			  escapeHTML( post.title ) +
+			  '" loading="lazy" /></div>' +
+			  '<a href="' + escapeHTML( post.permalink ) + '" class="wp-feed-display__masonry-overlay">' +
+			  '<div class="wp-feed-display__masonry-content">' +
+			  categoryHTML +
+			  '<h4 class="wp-feed-display__masonry-title">' +
+			  escapeHTML( post.title ) +
+			  '</h4>' +
+			  '<span class="wp-feed-display__masonry-btn">más</span>' +
+			  '</div></a>'
+			: '';
+
+		return (
+			'<article class="wp-feed-display__masonry-item">' +
+			imageHTML +
+			'</article>'
+		);
 	}
 
 	function parsePosts( data, useAjax ) {
@@ -69,7 +128,11 @@
 	}
 
 	function initFeed( container ) {
-		var grid = container.querySelector( '.wp-feed-display__grid' );
+		var viewMode = container.dataset.viewMode || 'grid';
+		var isMasonry = viewMode === 'masonry';
+		var isSplit = viewMode === 'split';
+
+		var grid = container.querySelector( isMasonry ? '.wp-feed-display__masonry' : isSplit ? '.wp-feed-display__split' : '.wp-feed-display__grid' );
 		var sentinel = container.querySelector( '.wp-feed-display__sentinel' );
 
 		if ( ! grid || ! sentinel ) return;
@@ -77,11 +140,22 @@
 		var categories = container.dataset.categories || '';
 		var tags = container.dataset.tags || '';
 		var perPage = parseInt( container.dataset.perPage, 10 ) || 6;
+		var excerptLength = parseInt( container.dataset.excerptLength, 10 ) || 150;
 
 		var page = 1;
 		var loading = false;
 		var exhausted = false;
 		var useAjax = !! AJAX_URL;
+
+		function createCardHTML( post ) {
+			if ( isMasonry ) {
+				return createMasonryCardHTML( post );
+			}
+			if ( isSplit ) {
+				return createSplitCardHTML( post );
+			}
+			return createGridCardHTML( post );
+		}
 
 		function fetchPosts() {
 			if ( loading || exhausted ) return;
@@ -93,6 +167,7 @@
 			var params = new URLSearchParams( {
 				page: String( page ),
 				per_page: String( perPage ),
+				excerpt_length: String( excerptLength ),
 			} );
 			if ( categories ) params.set( 'categories', categories );
 			if ( tags ) params.set( 'tags', tags );

@@ -28,7 +28,7 @@ class WP_Feed_Display_REST_API {
 
     private function get_query_args() {
         return [
-            'page'       => [
+            'page'        => [
                 'default'           => 1,
                 'sanitize_callback' => 'absint',
             ],
@@ -36,7 +36,7 @@ class WP_Feed_Display_REST_API {
                 'default'           => 6,
                 'sanitize_callback' => 'absint',
             ],
-            'categories' => [
+            'categories'  => [
                 'default'           => '',
                 'sanitize_callback' => 'sanitize_text_field',
             ],
@@ -44,15 +44,20 @@ class WP_Feed_Display_REST_API {
                 'default'           => '',
                 'sanitize_callback' => 'sanitize_text_field',
             ],
+            'excerpt_length' => [
+                'default'           => 150,
+                'sanitize_callback' => 'absint',
+            ],
         ];
     }
 
     public function ajax_get_posts() {
         $params = [
-            'page'       => isset( $_GET['page'] ) ? absint( $_GET['page'] ) : 1,
-            'per_page'   => isset( $_GET['per_page'] ) ? absint( $_GET['per_page'] ) : 6,
-            'categories' => isset( $_GET['categories'] ) ? sanitize_text_field( $_GET['categories'] ) : '',
-            'tags'       => isset( $_GET['tags'] ) ? sanitize_text_field( $_GET['tags'] ) : '',
+            'page'          => isset( $_GET['page'] ) ? absint( $_GET['page'] ) : 1,
+            'per_page'      => isset( $_GET['per_page'] ) ? absint( $_GET['per_page'] ) : 6,
+            'categories'    => isset( $_GET['categories'] ) ? sanitize_text_field( $_GET['categories'] ) : '',
+            'tags'          => isset( $_GET['tags'] ) ? sanitize_text_field( $_GET['tags'] ) : '',
+            'excerpt_length' => isset( $_GET['excerpt_length'] ) ? absint( $_GET['excerpt_length'] ) : 150,
         ];
 
         $posts = $this->query_posts( $params );
@@ -61,20 +66,22 @@ class WP_Feed_Display_REST_API {
 
     public function get_posts( $request ) {
         $params = [
-            'page'       => $request->get_param( 'page' ),
-            'per_page'   => $request->get_param( 'per_page' ),
-            'categories' => $request->get_param( 'categories' ),
-            'tags'       => $request->get_param( 'tags' ),
+            'page'          => $request->get_param( 'page' ),
+            'per_page'      => $request->get_param( 'per_page' ),
+            'categories'    => $request->get_param( 'categories' ),
+            'tags'          => $request->get_param( 'tags' ),
+            'excerpt_length' => $request->get_param( 'excerpt_length' ),
         ];
 
         return rest_ensure_response( $this->query_posts( $params ) );
     }
 
     private function query_posts( $params ) {
-        $page       = absint( $params['page'] ) ?: 1;
-        $per_page   = absint( $params['per_page'] ) ?: 6;
-        $categories = $params['categories'] ?? '';
-        $tags       = $params['tags'] ?? '';
+        $page          = absint( $params['page'] ) ?: 1;
+        $per_page      = absint( $params['per_page'] ) ?: 6;
+        $categories    = $params['categories'] ?? '';
+        $tags          = $params['tags'] ?? '';
+        $excerpt_length = absint( $params['excerpt_length'] ) ?: 150;
 
         $args = [
             'post_type'      => 'post',
@@ -110,12 +117,22 @@ class WP_Feed_Display_REST_API {
                 }
             }
 
+            $post_categories = get_the_terms( $post->ID, 'category' );
+            $category_name = '';
+            if ( $post_categories && ! is_wp_error( $post_categories ) && ! empty( $post_categories ) ) {
+                $category_name = $post_categories[0]->name;
+            }
+
+            $raw_excerpt = get_the_excerpt( $post );
+            $truncated_excerpt = wp_trim_words( $raw_excerpt, $excerpt_length, '…' );
+
             $posts[] = [
                 'id'        => $post->ID,
                 'title'     => get_the_title( $post ),
-                'excerpt'   => get_the_excerpt( $post ),
+                'excerpt'   => $truncated_excerpt,
                 'thumbnail' => $thumbnail,
                 'tags'      => $tag_list,
+                'category'  => $category_name,
                 'permalink' => get_permalink( $post ),
             ];
         }
