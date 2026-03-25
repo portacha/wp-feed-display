@@ -16,21 +16,20 @@
 	}
 
 	function createGridCardHTML( post ) {
-		var tagsHTML =
-			post.tags && post.tags.length
-				? '<div class="wp-feed-display__card-tags">' +
-				  post.tags
-						.map(
-							( tag ) =>
-								'<a href="' +
-								escapeHTML( tag.link ) +
-								'" class="wp-feed-display__tag">' +
-								escapeHTML( tag.name ) +
-								'</a>'
-						)
-						.join( '' ) +
-				  '</div>'
-				: '';
+		var tagsHTML = '';
+		if ( post.tags && post.tags.length ) {
+			var tagsArrHTML = [];
+			for ( var i = 0; i < post.tags.length; i++ ) {
+				tagsArrHTML.push(
+					'<a href="' +
+					escapeHTML( post.tags[ i ].link ) +
+					'" class="wp-feed-display__tag">' +
+					escapeHTML( post.tags[ i ].name ) +
+					'</a>'
+				);
+			}
+			tagsHTML = '<div class="wp-feed-display__card-tags">' + tagsArrHTML.join( '' ) + '</div>';
+		}
 
 		var imageHTML = post.thumbnail
 			? '<div class="wp-feed-display__card-image"><img src="' +
@@ -118,23 +117,27 @@
 	}
 
 	function createSlideCardHTML( post, textPosition ) {
-		var tagsHTML =
-			post.tags && post.tags.length
-				? '<div class="wp-feed-display__slide-tags">' +
-				  post.tags
-						.slice( 0, 3 )
-						.map(
-							( tag ) =>
-								'<span class="wp-feed-display__tag">' +
-								escapeHTML( tag.name ) +
-								'</span>'
-						)
-						.join( '' ) +
-				  '</div>'
-				: '';
+		var tagsHTML = '';
+		if ( post.tags && post.tags.length ) {
+			var tagsArr = post.tags.slice( 0, 3 );
+			var tagsArrHTML = [];
+			for ( var i = 0; i < tagsArr.length; i++ ) {
+				tagsArrHTML.push( '<span class="wp-feed-display__tag">' + escapeHTML( tagsArr[ i ].name ) + '</span>' );
+			}
+			tagsHTML = '<div class="wp-feed-display__slide-tags">' + tagsArrHTML.join( '' ) + '</div>';
+		}
+
+		var imageHTML = post.thumbnail
+			? '<div class="wp-feed-display__slide-image"><img src="' +
+			  escapeHTML( post.thumbnail ) +
+			  '" alt="' +
+			  escapeHTML( post.title ) +
+			  '" loading="lazy" /></div>'
+			: '<div class="wp-feed-display__slide-image wp-feed-display__slide-image--placeholder"></div>';
 
 		return (
 			'<article class="wp-feed-display__slide-card">' +
+			imageHTML +
 			'<div class="wp-feed-display__slide-text wp-feed-display__slide-text--' + textPosition + '">' +
 			'<h4 class="wp-feed-display__slide-title">' + escapeHTML( post.title ) + '</h4>' +
 			tagsHTML +
@@ -217,9 +220,11 @@
 			for ( var i = 0; i < totalSlides; i++ ) {
 				var dot = document.createElement( 'button' );
 				dot.className = 'wp-feed-display__slider-dot' + ( i === 0 ? ' active' : '' );
-				dot.addEventListener( 'click', function () {
-					goToSlide( i );
-				} );
+				( function ( index ) {
+					dot.addEventListener( 'click', function () {
+						goToSlide( index );
+					} );
+				} )( i );
 				dotsContainer.appendChild( dot );
 			}
 			container.appendChild( dotsContainer );
@@ -305,7 +310,8 @@
 			if ( categories ) params.set( 'categories', categories );
 			if ( tags ) params.set( 'tags', tags );
 
-			var url = API_BASE + '&' + params.toString();
+			var querySeparator = API_BASE.indexOf( '?' ) === -1 ? '?' : '&';
+			var url = API_BASE + querySeparator + params.toString();
 
 			fetch( url )
 				.then( function ( response ) {
@@ -319,6 +325,7 @@
 
 					if ( ! posts || posts.length === 0 ) {
 						exhausted = true;
+						loading = false;
 						if ( sentinel ) sentinel.classList.add( 'is-hidden' );
 
 						if ( ! isSlide && grid.children.length === 0 ) {
@@ -331,16 +338,11 @@
 					}
 
 					if ( isSlide ) {
-						allPosts = allPosts.concat( posts );
+						allPosts = posts;
 						page++;
 						loading = false;
-
-						if ( posts.length < 12 ) {
-							exhausted = true;
-							initSlider();
-						} else {
-							fetchPosts();
-						}
+						exhausted = true;
+						initSlider();
 						return;
 					}
 
@@ -360,7 +362,7 @@
 
 					if ( posts.length < perPage ) {
 						exhausted = true;
-						sentinel.classList.add( 'is-hidden' );
+						if ( sentinel ) sentinel.classList.add( 'is-hidden' );
 					}
 				} )
 				.catch( function ( error ) {
@@ -393,7 +395,10 @@
 
 			observer.observe( sentinel );
 			fetchPosts();
+		} else {
+			fetchPosts();
 		}
+	}
 
 	function init() {
 		document.querySelectorAll( '.wp-feed-display' ).forEach( initFeed );

@@ -113,7 +113,7 @@ $wrapper_attrs = get_block_wrapper_attributes( [
         </button>
     </div>
     <?php endif; ?>
-    <div class="wp-feed-display__sentinel" aria-hidden="true">
+    <div class="wp-feed-display__sentinel<?php echo $is_slide ? ' is-hidden' : ''; ?>" aria-hidden="true">
         <span class="wp-feed-display__spinner"></span>
     </div>
 </div>

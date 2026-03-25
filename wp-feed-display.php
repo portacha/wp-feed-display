@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP Feed Display
  * Description: Muestra los posts del sitio en un feed con carga lazy, imagen destacada, extracto y tags. Integrado como bloque Gutenberg configurable.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Axel
  * Text Domain: wp-feed-display
  * Requires at least: 6.0
