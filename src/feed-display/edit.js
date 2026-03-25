@@ -44,6 +44,9 @@ const DEFAULT_ATTRS = {
 	slideAccentColor: '#0073aa',
 	slideButtonBg: '#ffffff',
 	slideButtonText: '#000000',
+	slideArrowBg: 'rgba(0,0,0,0.45)',
+	slideArrowColor: '#ffffff',
+	slideArrowShape: 'circle',
 };
 
 export default function Edit( { attributes, setAttributes } ) {
@@ -77,6 +80,9 @@ export default function Edit( { attributes, setAttributes } ) {
 		slideAccentColor = DEFAULT_ATTRS.slideAccentColor,
 		slideButtonBg = DEFAULT_ATTRS.slideButtonBg,
 		slideButtonText = DEFAULT_ATTRS.slideButtonText,
+		slideArrowBg = DEFAULT_ATTRS.slideArrowBg,
+		slideArrowColor = DEFAULT_ATTRS.slideArrowColor,
+		slideArrowShape = DEFAULT_ATTRS.slideArrowShape,
 	} = attributes;
 
 	const isMasonry = viewMode === 'masonry';
@@ -111,6 +117,9 @@ export default function Edit( { attributes, setAttributes } ) {
 			'--slide-accent': slideAccentColor,
 			'--slide-btn-bg': slideButtonBg,
 			'--slide-btn-text': slideButtonText,
+			'--slide-arrow-bg': slideArrowShape === 'minimal' ? 'transparent' : slideArrowBg,
+			'--slide-arrow-color': slideArrowColor,
+			'--slide-arrow-radius': ( { circle: '50%', square: '6px', rounded: '16px', minimal: '50%' } )[ slideArrowShape ] || '50%',
 			backgroundColor: isMasonry ? 'transparent' : ( isSlide ? slideBg : backgroundColor ),
 			color: isSlide ? slideTextColor : textColor,
 		},
@@ -229,9 +238,13 @@ export default function Edit( { attributes, setAttributes } ) {
 		}
 
 		if ( isSlide ) {
+			if ( ! featuredImage ) return null;
 			const postTags = post._embedded?.[ 'wp:term' ]?.[ 1 ]?.slice( 0, 3 ) || [];
 			return (
-				<article key={ post.id } className="wp-feed-display__slide-card">
+				<article key={ post.id } className="wp-feed-display__slide-card is-active">
+					<div className="wp-feed-display__slide-image">
+						<img src={ featuredImage } alt={ post.title?.rendered || '' } />
+					</div>
 					<div className={ `wp-feed-display__slide-text wp-feed-display__slide-text--${ slideTextPosition }` }>
 						<h4 className="wp-feed-display__slide-title">{ post.title?.rendered || '' }</h4>
 						{ postTags.length > 0 && (
@@ -465,8 +478,17 @@ export default function Edit( { attributes, setAttributes } ) {
 								{ label: __( 'Centro', 'wp-feed-display' ), value: 'center' },
 							] }
 							onChange={ ( val ) => setAttributes( { slideTextPosition: val } ) }
-						/>
-					</PanelBody>
+						/>					<SelectControl
+						label={ __( 'Forma de las flechas', 'wp-feed-display' ) }
+						value={ slideArrowShape }
+						options={ [
+							{ label: __( 'Círculo', 'wp-feed-display' ), value: 'circle' },
+							{ label: __( 'Cuadrado', 'wp-feed-display' ), value: 'square' },
+							{ label: __( 'Redondeado', 'wp-feed-display' ), value: 'rounded' },
+							{ label: __( 'Minimal (sin fondo)', 'wp-feed-display' ), value: 'minimal' },
+						] }
+						onChange={ ( val ) => setAttributes( { slideArrowShape: val } ) }
+					/>					</PanelBody>
 				) }
 
 				{ isSlide && (
@@ -505,6 +527,24 @@ export default function Edit( { attributes, setAttributes } ) {
 								value: slideButtonText,
 								onChange: ( color ) => setAttributes( { slideButtonText: color } ),
 								label: __( 'Color de texto botón', 'wp-feed-display' ),
+							},
+						] }
+					/>
+				) }
+
+				{ isSlide && (
+					<PanelColorSettings
+						title={ __( 'Colores de flechas', 'wp-feed-display' ) }
+						colorSettings={ [
+							{
+								value: slideArrowBg,
+								onChange: ( color ) => setAttributes( { slideArrowBg: color } ),
+								label: __( 'Fondo de flecha', 'wp-feed-display' ),
+							},
+							{
+								value: slideArrowColor,
+								onChange: ( color ) => setAttributes( { slideArrowColor: color } ),
+								label: __( 'Ícono de flecha', 'wp-feed-display' ),
 							},
 						] }
 					/>

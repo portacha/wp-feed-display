@@ -69,8 +69,19 @@ if ( $is_masonry ) {
         esc_attr( $attributes['splitColumns'] ?? 2 )
     );
 } elseif ( $is_slide ) {
+    $arrow_shape = $attributes['slideArrowShape'] ?? 'circle';
+    if ( 'square' === $arrow_shape ) {
+        $arrow_radius = '6px';
+    } elseif ( 'rounded' === $arrow_shape ) {
+        $arrow_radius = '16px';
+    } else {
+        $arrow_radius = '50%';
+    }
+    $arrow_bg = ( 'minimal' === $arrow_shape )
+        ? 'transparent'
+        : esc_attr( $attributes['slideArrowBg'] ?? 'rgba(0,0,0,0.45)' );
     $style_vars .= sprintf(
-        '--slide-posts:%d;--slide-interval:%dms;--slide-text-pos:%s;--slide-bg:%s;--slide-text:%s;--slide-accent:%s;--slide-btn-bg:%s;--slide-btn-text:%s;',
+        '--slide-posts:%d;--slide-interval:%dms;--slide-text-pos:%s;--slide-bg:%s;--slide-text:%s;--slide-accent:%s;--slide-btn-bg:%s;--slide-btn-text:%s;--slide-arrow-bg:%s;--slide-arrow-color:%s;--slide-arrow-radius:%s;',
         esc_attr( $attributes['slidePosts'] ?? 1 ),
         esc_attr( $attributes['slideInterval'] ?? 5000 ),
         esc_attr( $attributes['slideTextPosition'] ?? 'bottom' ),
@@ -78,7 +89,10 @@ if ( $is_masonry ) {
         esc_attr( $attributes['slideTextColor'] ?? '#ffffff' ),
         esc_attr( $attributes['slideAccentColor'] ?? '#0073aa' ),
         esc_attr( $attributes['slideButtonBg'] ?? '#ffffff' ),
-        esc_attr( $attributes['slideButtonText'] ?? '#000000' )
+        esc_attr( $attributes['slideButtonText'] ?? '#000000' ),
+        $arrow_bg,
+        esc_attr( $attributes['slideArrowColor'] ?? '#ffffff' ),
+        $arrow_radius
     );
 } else {
     $style_vars .= sprintf(

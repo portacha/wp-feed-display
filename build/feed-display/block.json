@@ -128,6 +128,18 @@
     "slideButtonText": {
       "type": "string",
       "default": "#000000"
+    },
+    "slideArrowBg": {
+      "type": "string",
+      "default": "rgba(0,0,0,0.45)"
+    },
+    "slideArrowColor": {
+      "type": "string",
+      "default": "#ffffff"
+    },
+    "slideArrowShape": {
+      "type": "string",
+      "default": "circle"
     }
   }
 }

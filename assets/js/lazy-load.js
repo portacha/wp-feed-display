@@ -127,13 +127,15 @@
 			tagsHTML = '<div class="wp-feed-display__slide-tags">' + tagsArrHTML.join( '' ) + '</div>';
 		}
 
-		var imageHTML = post.thumbnail
-			? '<div class="wp-feed-display__slide-image"><img src="' +
-			  escapeHTML( post.thumbnail ) +
-			  '" alt="' +
-			  escapeHTML( post.title ) +
-			  '" loading="lazy" /></div>'
-			: '<div class="wp-feed-display__slide-image wp-feed-display__slide-image--placeholder"></div>';
+		if ( ! post.thumbnail ) {
+			return null;
+		}
+
+		var imageHTML = '<div class="wp-feed-display__slide-image"><img src="' +
+			escapeHTML( post.thumbnail ) +
+			'" alt="' +
+			escapeHTML( post.title ) +
+			'" loading="lazy" /></div>';
 
 		return (
 			'<article class="wp-feed-display__slide-card">' +
@@ -200,20 +202,28 @@
 		function initSlider() {
 			if ( ! isSlide || allPosts.length === 0 ) return;
 
+			// Filtrar posts sin imagen destacada
+			var slidablePosts = allPosts.filter( function ( p ) { return !! p.thumbnail; } );
+			if ( slidablePosts.length === 0 ) return;
+
 			var sliderInner = document.createElement( 'div' );
 			sliderInner.className = 'wp-feed-display__slider-inner';
 
 			var temp = document.createElement( 'div' );
-			allPosts.forEach( function ( post ) {
-				temp.innerHTML = createCardHTML( post );
+			slidablePosts.forEach( function ( post ) {
+				var html = createCardHTML( post );
+				if ( ! html ) return;
+				temp.innerHTML = html;
 				if ( temp.firstChild ) {
 					sliderInner.appendChild( temp.firstChild );
 				}
 			} );
 
+			if ( ! sliderInner.children.length ) return;
 			grid.appendChild( sliderInner );
 
-			var totalSlides = Math.ceil( allPosts.length / slidePosts );
+			var totalCards = sliderInner.children.length;
+			var totalSlides = Math.ceil( totalCards / slidePosts );
 
 			var dotsContainer = document.createElement( 'div' );
 			dotsContainer.className = 'wp-feed-display__slider-dots';
@@ -244,9 +254,28 @@
 			}
 
 			function goToSlide( index ) {
+				var cards = sliderInner.querySelectorAll( '.wp-feed-display__slide-card' );
+				var total = cards.length;
+
+				cards.forEach( function ( card ) {
+					card.classList.remove( 'is-active', 'is-prev', 'is-next' );
+				} );
+
+				var start = index * slidePosts;
+				for ( var j = start; j < start + slidePosts && j < total; j++ ) {
+					cards[ j ].classList.add( 'is-active' );
+				}
+				if ( start > 0 ) {
+					cards[ start - 1 ].classList.add( 'is-prev' );
+				}
+				if ( start + slidePosts < total ) {
+					cards[ start + slidePosts ].classList.add( 'is-next' );
+				}
+
+				sliderInner.classList.toggle( 'has-prev', start > 0 );
+				sliderInner.classList.toggle( 'has-next', start + slidePosts < total );
+
 				currentSlide = index;
-				var offset = -currentSlide * 100;
-				sliderInner.style.transform = 'translateX(' + offset + '%)';
 
 				var dots = dotsContainer.querySelectorAll( '.wp-feed-display__slider-dot' );
 				dots.forEach( function ( dot, i ) {
@@ -257,15 +286,13 @@
 			}
 
 			function nextSlide() {
-				var totalSlides = Math.ceil( allPosts.length / slidePosts );
-				currentSlide = ( currentSlide + 1 ) % totalSlides;
-				goToSlide( currentSlide );
+				var ts = Math.ceil( sliderInner.children.length / slidePosts );
+				goToSlide( ( currentSlide + 1 ) % ts );
 			}
 
 			function prevSlide() {
-				var totalSlides = Math.ceil( allPosts.length / slidePosts );
-				currentSlide = ( currentSlide - 1 + totalSlides ) % totalSlides;
-				goToSlide( currentSlide );
+				var ts = Math.ceil( sliderInner.children.length / slidePosts );
+				goToSlide( ( currentSlide - 1 + ts ) % ts );
 			}
 
 			function resetAutoSlide() {
@@ -277,7 +304,8 @@
 				}
 			}
 
-			resetAutoSlide();
+			// Inicializar estado visual del primer slide
+			goToSlide( 0 );
 
 			container.addEventListener( 'mouseenter', function () {
 				if ( autoSlideTimer ) {
