@@ -474,6 +474,7 @@ a.wp-feed-display__masonry-overlay:hover {
    ============================================ */
 
 .wp-feed-display--slide {
+	position: relative; /* scope para hijos position:absolute */
 	overflow: hidden;
 	padding: 3rem 0;
 	background: var(--slide-bg, #000000);
@@ -643,24 +644,28 @@ a.wp-feed-display__masonry-overlay:hover {
 	text-decoration: none;
 }
 
-/* Navigation arrows — fully customizable via CSS vars */
+/* Navigation arrows — cubre el área completa del contenedor, transparente al mouse salvo los botones */
 .wp-feed-display__slider-nav {
 	position: absolute;
-	top: 50%;
-	transform: translateY(-50%);
+	inset: 0;
+	pointer-events: none;
 	z-index: 20;
-	display: flex;
-	gap: 0;
 }
 
 .wp-feed-display__slider-prev {
-	left: 1rem;
 	position: absolute;
+	left: 1rem;
+	top: 50%;
+	transform: translateY(-50%);
+	pointer-events: all;
 }
 
 .wp-feed-display__slider-next {
-	right: 1rem;
 	position: absolute;
+	right: 1rem;
+	top: 50%;
+	transform: translateY(-50%);
+	pointer-events: all;
 }
 
 .wp-feed-display__slider-nav button {
